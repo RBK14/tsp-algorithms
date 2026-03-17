@@ -8,5 +8,5 @@ class NearestNeighbour : public ITspAlgorithm {
 	public:
 		NearestNeighbour(int startNode = 0);
 
-		virtual void solve(const TspMatrix& matrix) override;
+		TspResult* solve(const TspMatrix& matrix) override;
 };

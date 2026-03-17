@@ -1,4 +1,4 @@
-#include "io/DataLoader.h"
+#include "utils/DataLoader.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -7,14 +7,14 @@
 bool DataLoader::loadFromFile(const std::string& filename, TspMatrix& matrix) {
 	std::ifstream file(filename);
 
-	if (!file.is_open) {
-		std::cerr << "An error occurred while opening teh file: " << filename << std::endl;
+	if (!file.is_open()) {
+		std::cerr << "An error occurred while opening the file: " << filename << std::endl;
 		return false;
 	}
 
 	std::string line;
 	int dimension = 0;
-	bool readingMatrix = false;
+	bool inWeightSection = false;
 
 	// Parse the file to find the dimension and the start of the edge weight section
     while (std::getline(file, line)) {
@@ -33,7 +33,7 @@ bool DataLoader::loadFromFile(const std::string& filename, TspMatrix& matrix) {
     }
 
     if (!inWeightSection || dimension <= 0) {
-        std::cerr << "Invalid file forma (DIMENSION lub EDGE_WEIGHT_SECTION is missing)." << std::endl;
+        std::cerr << "Invalid file format (DIMENSION lub EDGE_WEIGHT_SECTION is missing)." << std::endl;
         return false;
     }
 
@@ -73,14 +73,14 @@ bool DataLoader::loadFromFile(const std::string& filename, TspMatrix& matrix) {
                 continue;
             }
         }
-
-		file.close();
-
-        if (count < totalElements) {
-            std::cerr << "Invalid weight matrix for dimension " << dimension << "." << std::endl;
-            return false;
-        }
-
-		return true;
     }
+
+    file.close();
+
+    if (count < totalElements) {
+        std::cerr << "Invalid weight matrix for dimension " << dimension << "." << std::endl;
+        return false;
+    }
+
+    return true;
 }

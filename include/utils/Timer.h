@@ -11,5 +11,7 @@ class Timer {
 
         void stop();
 
+        long long getElapsedMicroseconds() const;
+
         double getElapsedMilliseconds() const;
 };

@@ -4,11 +4,11 @@
 TspResult* RepetitiveNearestNeighbour::solve(const TspMatrix& matrix) {
 	int n = matrix.getNumVertices();
 
-	TspResult* bestResult = nullptr;
+	TspResult* bestResult = new TspResult(n);
 	if (n == 0)
 		return bestResult;
 
-	bestresult->cost = INT_MAX;
+	bestResult->cost = INT_MAX;
 
 	bool* visited = new bool[n];
 	int* currentPath = new int[n + 1];
