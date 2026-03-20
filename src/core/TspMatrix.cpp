@@ -19,7 +19,7 @@ void TspMatrix::clear() {
     numVertices = 0;
 }
 
-bool isValidVertex(int vertex) const {
+bool TspMatrix::isValidVertex(int vertex) const {
     return vertex >= 0 && vertex < numVertices;
 }
 
