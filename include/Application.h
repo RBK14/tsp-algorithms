@@ -10,6 +10,7 @@ class Application {
 
         void runAlgorithm(ITspAlgorithm* algorithm, const std::string& algorithmName);
 
+		void clearScreen();
         void loadData();
         void displayMatrix();
 
