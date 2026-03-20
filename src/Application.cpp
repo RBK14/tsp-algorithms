@@ -6,8 +6,17 @@
 #include "algorithms/RandomSearch.h"
 #include "algorithms/BruteForce.h"
 #include <iostream>
+#include <cstdlib>
 
 Application::Application() : isDataLoaded(false) {}
+
+void Application::clearScreen() {
+#ifdef _WIN32
+    std::system("cls");
+#else
+    std::system("clear");
+#endif
+}
 
 void Application::runAlgorithm(ITspAlgorithm* algorithm, const std::string& algorithmName) {
     if (!isDataLoaded) {
@@ -44,16 +53,38 @@ void Application::runAlgorithm(ITspAlgorithm* algorithm, const std::string& algo
 }
 
 void Application::loadData() {
+    int formatChoice = 0;
+    std::cout << "\n--- Select File Format ---" << std::endl;
+    std::cout << "1. EXPLICIT (Full Matrix, e.g., atsp_5.txt)" << std::endl;
+    std::cout << "2. EUC_2D (Coordinates, e.g., xqf131.txt)" << std::endl;
+    std::cout << "Choose format: ";
+    std::cin >> formatChoice;
+
+    if (formatChoice != 1 && formatChoice != 2) {
+        std::cout << "Invalid format selected. Returning to menu." << std::endl;
+        return;
+    }
+
     std::string filename;
     std::cout << "Enter the filename (e.g., data/atsp_5.txt): ";
     std::cin >> filename;
 
-    if (DataLoader::loadFromFile(filename, matrix)) {
+    bool success = false;
+
+    if (formatChoice == 1) {
+        success = DataLoader::loadFromFile(filename, matrix);
+    }
+    else if (formatChoice == 2) {
+        success = DataLoader::loadCoordinatesFromFile(filename, matrix);
+    }
+
+    if (success) {
         isDataLoaded = true;
         std::cout << "Data loaded successfully!" << std::endl;
     }
     else {
         isDataLoaded = false;
+        std::cout << "Failed to load data. Please check the file format and path." << std::endl;
     }
 }
 
@@ -69,6 +100,8 @@ void Application::displayMatrix() {
 void Application::run() {
     int choice = -1;
 
+    clearScreen();
+
     while (choice != 0) {
         std::cout << "\n=======================================" << std::endl;
         std::cout << "   TRAVELING SALESMAN PROBLEM (TSP)    " << std::endl;
@@ -82,6 +115,8 @@ void Application::run() {
         std::cout << "0. Exit" << std::endl;
         std::cout << "Choose an option: ";
         std::cin >> choice;
+
+        clearScreen();
 
         switch (choice) {
         case 1:
@@ -109,6 +144,7 @@ void Application::run() {
             int iterations;
             std::cout << "Enter the number of iterations for Random Search: ";
             std::cin >> iterations;
+            clearScreen();
             RandomSearch randSearch(iterations);
             runAlgorithm(&randSearch, "Random Search");
             break;
