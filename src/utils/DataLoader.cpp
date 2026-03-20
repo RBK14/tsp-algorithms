@@ -3,28 +3,31 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <algorithm>
+#include <cmath>
+#include <vector>
 
 bool DataLoader::loadFromFile(const std::string& filename, TspMatrix& matrix) {
-	std::ifstream file(filename);
+    std::ifstream file(filename);
 
-	if (!file.is_open()) {
-		std::cerr << "An error occurred while opening the file: " << filename << std::endl;
-		return false;
-	}
+    if (!file.is_open()) {
+        std::cerr << "An error occurred while opening the file: " << filename << std::endl;
+        return false;
+    }
 
-	std::string line;
-	int dimension = 0;
-	bool inWeightSection = false;
+    std::string line;
+    int dimension = 0;
+    bool inWeightSection = false;
 
-	// Parse the file to find the dimension and the start of the edge weight section
     while (std::getline(file, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
 
         if (line.find("DIMENSION") != std::string::npos) {
-            std::size_t colonPos = line.find(':');
-            if (colonPos != std::string::npos) {
-                dimension = std::stoi(line.substr(colonPos + 1));
+            std::string numStr = "";
+            for (char c : line) {
+                if (std::isdigit(c)) numStr += c;
             }
+            if (!numStr.empty()) dimension = std::stoi(numStr);
         }
         else if (line.find("EDGE_WEIGHT_SECTION") != std::string::npos) {
             inWeightSection = true;
@@ -33,16 +36,14 @@ bool DataLoader::loadFromFile(const std::string& filename, TspMatrix& matrix) {
     }
 
     if (!inWeightSection || dimension <= 0) {
-        std::cerr << "Invalid file format (DIMENSION lub EDGE_WEIGHT_SECTION is missing)." << std::endl;
+        std::cerr << "Invalid file format for explicit matrix." << std::endl;
         return false;
     }
 
     matrix.allocate(dimension);
-
     int count = 0;
     int totalElements = dimension * dimension;
 
-	// Read the edge weight section and fill the matrix
     while (count < totalElements && std::getline(file, line)) {
         std::stringstream ss(line);
         std::string token;
@@ -52,24 +53,18 @@ bool DataLoader::loadFromFile(const std::string& filename, TspMatrix& matrix) {
 
             try {
                 int weight = std::stoi(token);
-
                 int row = count / dimension;
                 int col = count % dimension;
 
-				// Set the weight in the matrix, ensuring that diagonal elements are set to -1
                 if (row == col) {
                     matrix.setWeight(row, col, -1);
                 }
                 else {
                     matrix.setWeight(row, col, weight);
                 }
-
                 count++;
             }
-            catch (const std::invalid_argument&) {
-                continue;
-            }
-            catch (const std::out_of_range&) {
+            catch (...) {
                 continue;
             }
         }
@@ -77,10 +72,82 @@ bool DataLoader::loadFromFile(const std::string& filename, TspMatrix& matrix) {
 
     file.close();
 
-    if (count < totalElements) {
-        std::cerr << "Invalid weight matrix for dimension " << dimension << "." << std::endl;
+    if (count < totalElements) return false;
+    return true;
+}
+
+bool DataLoader::loadCoordinatesFromFile(const std::string& filename, TspMatrix& matrix) {
+    std::ifstream file(filename);
+
+    if (!file.is_open()) {
+        std::cerr << "An error occurred while opening the file: " << filename << std::endl;
         return false;
     }
 
+    std::string line;
+    int dimension = 0;
+    bool inCoordSection = false;
+
+    while (std::getline(file, line)) {
+        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+
+        if (line.find("DIMENSION") != std::string::npos) {
+            std::string numStr = "";
+            for (char c : line) {
+                if (std::isdigit(c)) numStr += c;
+            }
+            if (!numStr.empty()) dimension = std::stoi(numStr);
+        }
+        else if (line.find("NODE_COORD_SECTION") != std::string::npos) {
+            inCoordSection = true;
+            break;
+        }
+    }
+
+    if (!inCoordSection || dimension <= 0) {
+        std::cerr << "Invalid file format for coordinates (EUC_2D)." << std::endl;
+        return false;
+    }
+
+    std::vector<std::pair<double, double>> coords(dimension);
+    int readNodes = 0;
+
+    while (readNodes < dimension && std::getline(file, line)) {
+        if (line.find("EOF") != std::string::npos) break;
+
+        std::stringstream ss(line);
+        int id;
+        double x, y;
+
+        if (ss >> id >> x >> y) {
+            if (id > 0 && id <= dimension) {
+                coords[id - 1] = { x, y };
+                readNodes++;
+            }
+        }
+    }
+
+    if (readNodes < dimension) {
+        std::cerr << "Not enough coordinates found in file." << std::endl;
+        return false;
+    }
+
+    matrix.allocate(dimension);
+
+    for (int i = 0; i < dimension; ++i) {
+        for (int j = 0; j < dimension; ++j) {
+            if (i == j) {
+                matrix.setWeight(i, j, -1);
+            }
+            else {
+                double dx = coords[i].first - coords[j].first;
+                double dy = coords[i].second - coords[j].second;
+                int distance = static_cast<int>(std::round(std::sqrt(dx * dx + dy * dy)));
+                matrix.setWeight(i, j, distance);
+            }
+        }
+    }
+
+    file.close();
     return true;
 }
